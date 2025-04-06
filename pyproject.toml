@@ -33,16 +33,12 @@ path = "chrysalis/__about__.py"
 installer = "uv"
 
 [tool.hatch.envs.ci]
-extra-dependencies = [
-  "mypy>=1.0.0",
-]
+extra-dependencies = ["mypy>=1.0.0"]
 [tool.hatch.envs.ci.scripts]
-check = [
-    "mypy --install-types --non-interactive {args:chrysalis tests}",
-]
+check = ["mypy --install-types --non-interactive {args:chrysalis tests}"]
 
 [tool.ruff.lint]
-ignore = ["T201"]
+ignore = ["T201", "PLC0414", "S101", "SLF001"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["chrysalis"]
@@ -51,17 +47,11 @@ known-first-party = ["chrysalis"]
 source_pkgs = ["chrysalis", "tests"]
 branch = true
 parallel = true
-omit = [
-  "chrysalis/__about__.py",
-]
+omit = ["chrysalis/__about__.py"]
 
 [tool.coverage.paths]
 chrysalis = ["chrysalis", "*/chrysalis/chrysalis"]
 tests = ["tests", "*/chrysalis/tests"]
 
 [tool.coverage.report]
-exclude_lines = [
-  "no cov",
-  "if __name__ == .__main__.:",
-  "if TYPE_CHECKING:",
-]
+exclude_lines = ["no cov", "if __name__ == .__main__.:", "if TYPE_CHECKING:"]
