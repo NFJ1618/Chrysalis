@@ -43,6 +43,12 @@ ignore = ["T201", "PLC0414", "S101", "SLF001"]
 [tool.ruff.lint.isort]
 known-first-party = ["chrysalis"]
 
+[tool.hatch.envs.hatch-test.scripts]
+run = "pytest chrysalis {args}"
+run-cov = "coverage run -m pytest tests/*.py chrysalis {args}"
+cov-combine = "coverage combine"
+cov-report = "coverage report"
+
 [tool.coverage.run]
 source_pkgs = ["chrysalis", "tests"]
 branch = true
