@@ -7,7 +7,7 @@ name = "chrysalis"
 dynamic = ["version"]
 description = 'A metamorphic testing framework for Python'
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.12"
 license = "MIT"
 keywords = []
 authors = [
@@ -17,14 +17,10 @@ authors = [
 classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python",
-  "Programming Language :: Python :: 3.9",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python :: Implementation :: CPython",
-  "Programming Language :: Python :: Implementation :: PyPy",
+  "Programming Language :: Python :: 3.13",
 ]
-dependencies = []
+dependencies = ["pytest"]
 
 [tool.hatch.version]
 path = "chrysalis/__about__.py"
@@ -37,8 +33,20 @@ extra-dependencies = ["mypy>=1.0.0"]
 [tool.hatch.envs.mypy.scripts]
 check = ["mypy --install-types --non-interactive {args:chrysalis tests}"]
 
+[tool.ruff]
+line-length = 88
+
 [tool.ruff.lint]
-ignore = ["T201", "PLC0414", "S101", "SLF001"]
+ignore = [
+  "T201",
+  "PLC0414",
+  "S101",
+  "SLF001",
+  "S311",
+  "PLR2004",
+  "TRY003",
+  "EM101",
+]
 
 [tool.ruff.lint.isort]
 known-first-party = ["chrysalis"]
