@@ -32,9 +32,9 @@ path = "chrysalis/__about__.py"
 [tool.hatch.envs.default]
 installer = "uv"
 
-[tool.hatch.envs.ci]
+[tool.hatch.envs.mypy]
 extra-dependencies = ["mypy>=1.0.0"]
-[tool.hatch.envs.ci.scripts]
+[tool.hatch.envs.mypy.scripts]
 check = ["mypy --install-types --non-interactive {args:chrysalis tests}"]
 
 [tool.ruff.lint]
