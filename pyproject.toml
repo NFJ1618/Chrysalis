@@ -32,9 +32,9 @@ path = "chrysalis/__about__.py"
 [tool.hatch.envs.default]
 installer = "uv"
 
-[tool.hatch.envs.ci]
+[tool.hatch.envs.mypy]
 extra-dependencies = ["mypy>=1.0.0"]
-[tool.hatch.envs.ci.scripts]
+[tool.hatch.envs.mypy.scripts]
 check = ["mypy --install-types --non-interactive {args:chrysalis tests}"]
 
 [tool.ruff.lint]
@@ -42,6 +42,12 @@ ignore = ["T201", "PLC0414", "S101", "SLF001"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["chrysalis"]
+
+[tool.hatch.envs.hatch-test.scripts]
+run = "pytest tests/*.py chrysalis {args}"
+run-cov = "coverage run -m pytest tests/*.py chrysalis {args}"
+cov-combine = "coverage combine"
+cov-report = "coverage report"
 
 [tool.coverage.run]
 source_pkgs = ["chrysalis", "tests"]
