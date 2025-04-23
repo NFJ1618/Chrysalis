@@ -1,41 +1,24 @@
+import ast
+
+from chrysalis._internal import _invariants as invariants
 from chrysalis._internal._relation import KnowledgeBase
 from chrysalis._internal._search import SearchSpace
-
-
-def identity(x: int) -> int:
-    return x
-
-
-def double_negative(x: int) -> int:
-    return -1 * -1 * x
-
-
-def inverse(x: int) -> int:
-    return -1 * x
-
-
-def equals(x: int, y: int) -> bool:
-    return x == y
-
-
-def not_equals(x: int, y: int) -> bool:
-    return x != y
+from chrysalis._internal.conftest import (
+    identity,
+    inverse,
+)
 
 
 def test_metamorphic_search_random() -> None:
-    knowledge_base = KnowledgeBase[int, int]()
+    knowledge_base = KnowledgeBase[ast.Expression, float]()
 
     knowledge_base.register(
         transformation=identity,
-        invariant=equals,
+        invariant=invariants.equals,
     )
     knowledge_base.register(
         transformation=inverse,
-        invariant=not_equals,
-    )
-    knowledge_base.register(
-        transformation=double_negative,
-        invariant=equals,
+        invariant=invariants.not_equals,
     )
 
     search_space = SearchSpace(knowledge_base=knowledge_base)
@@ -43,8 +26,8 @@ def test_metamorphic_search_random() -> None:
     assert len(relation_chains) == 5
     assert all(len(relation_chain) == 10 for relation_chain in relation_chains)
     assert all(
-        {relation.name for relation in relation_chain}.issubset(
-            {"identity", "double_negative", "inverse"}
+        {relation.transformation_name for relation in relation_chain}.issubset(
+            {"identity", "inverse"}
         )
         for relation_chain in relation_chains
     )

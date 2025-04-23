@@ -1,25 +1,21 @@
+import ast
+
 import pytest
 
+from chrysalis._internal import _invariants as invariants
 from chrysalis._internal._relation import KnowledgeBase
-
-
-def identity(x: int) -> int:
-    return x
-
-
-def equals(x: int, y: int) -> bool:
-    return x == y
+from chrysalis._internal.conftest import identity
 
 
 def test_create_relation() -> None:
-    knowledge_base = KnowledgeBase[int, int]()
+    knowledge_base = KnowledgeBase[ast.Expression, float]()
     knowledge_base.register(
         transformation=identity,
-        invariant=equals,
+        invariant=invariants.equals,
     )
 
     relation = knowledge_base.relations[0]
-    assert relation.name == "identity"
+    assert relation.transformation_name == "identity"
     assert relation.invariants[0].__name__ == "equals"
 
 
