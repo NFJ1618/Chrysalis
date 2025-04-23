@@ -20,7 +20,7 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
 ]
-dependencies = ["pytest"]
+dependencies = ["pytest>=8.0.0", "duckdb>=1.2.0"]
 
 [tool.hatch.version]
 path = "chrysalis/__about__.py"
@@ -46,6 +46,10 @@ ignore = [
   "PLR2004",
   "TRY003",
   "EM101",
+  "FBT001",
+  "FBT002",
+  "TCH003",
+  "S301",
 ]
 
 [tool.ruff.lint.isort]

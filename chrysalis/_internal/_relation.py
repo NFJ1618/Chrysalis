@@ -30,7 +30,7 @@ class Relation[T, R]:
         return self._transformation(data)
 
     @property
-    def name(self) -> str:
+    def transformation_name(self) -> str:
         return self._transformation.__name__
 
     @property
