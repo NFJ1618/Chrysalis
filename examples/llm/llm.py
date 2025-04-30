@@ -14,6 +14,7 @@ from chrysalis import invariants
 
 # --- Prompt Construction ---
 
+
 def stitch_prompt(prompt_parts: Dict[str, Any]) -> str:
     """Assemble a complete prompt from modular parts."""
     sections = [
@@ -90,6 +91,7 @@ chry.register(decrease_expertise, invariants.less_than_equal)
 
 # --- Test Runner ---
 
+
 def llm_test(prompt_parts: Dict[str, Any], num_tries: int = 10) -> None:
     """Test model consistency by asking LLM to judge its own response."""
     expected_answer = prompt_parts.get("correct_answer", "").strip()
@@ -114,12 +116,13 @@ def llm_test(prompt_parts: Dict[str, Any], num_tries: int = 10) -> None:
 
     final_accuracy = correct / num_tries
     # print(
-        # f"[Expertise {prompt_parts['expertise_level']}] Final Accuracy: {final_accuracy:.2%} | Target: {expected_answer}"
+    # f"[Expertise {prompt_parts['expertise_level']}] Final Accuracy: {final_accuracy:.2%} | Target: {expected_answer}"
     # )
     return final_accuracy
 
 
 # --- Input Generation ---
+
 
 def get_input_data(n: int = 10) -> List[Dict[str, Any]]:
     """Generate input prompts with varying expertise and random math expressions."""
@@ -147,5 +150,4 @@ def get_input_data(n: int = 10) -> List[Dict[str, Any]]:
 
 if __name__ == "__main__":
     # --- Run All Tests ---
-    chry.run(llm_test, get_input_data(3), chain_length=3, num_chains=1)
-
+    chry.run(llm_test, get_input_data(1), chain_length=3, num_chains=1)

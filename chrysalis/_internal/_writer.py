@@ -10,14 +10,14 @@ from chrysalis._internal._search import SearchStrategy
 
 # ASCII ART Credit: https://patorjk.com/software/taag.
 _ASCII_ART_CHRYSALIS = """
-   _____ _                          _ _
-  / ____| |                        | (_)
- | |    | |__  _ __ _   _  __ _ ___| |_ ___
- | |    | '_ \\| '__| | | |/ _` / __| | / __|
- | |____| | | | |  | |_| | (_| \\__ | | \\__ \\
-  \\_____|_| |_|_|   \\__, |\\__,_|___|_|_|___/
-                     __/ |
-                    |___/
+   _____ _                          _ _     
+  / ____| |                        | (_)    
+ | |    | |__  _ __ _   _ ___  __ _| |_ ___ 
+ | |    | '_ \\| '__| | | / __|/ _` | | / __|
+ | |____| | | | |  | |_| \\__ \\ (_| | | \\__ \\
+  \\_____|_| |_|_|   \\__, |___/\\__,_|_|_|___/
+                     __/ |                  
+                    |___/                   
 """
 
 
@@ -60,7 +60,7 @@ class TerminalUIWriter[T, R]:
         verbosity: Verbosity = Verbosity.FAILURE,
     ) -> None:
         self._verbosity = verbosity
-        self._failed_relations: list[FailedInvaraint[T, R]]
+        self._failed_relations: list[FailedInvaraint[T, R]] = []
 
     @min_verbosity_level(verbosity=Verbosity.FAILURE)
     def print_header(
@@ -69,7 +69,7 @@ class TerminalUIWriter[T, R]:
         chain_length: int,
         num_chains: int,
     ) -> None:
-        print(_ASCII_ART_CHRYSALIS)
+        print("\033[35m" + _ASCII_ART_CHRYSALIS + "\033[0m")
         print(f"Search Strategy: {search_strategy.name}")
         print(f"Chain Length: {chain_length}")
         print(f"Num Chains: {num_chains}")
@@ -77,9 +77,9 @@ class TerminalUIWriter[T, R]:
 
     def _print_tested_relation_level_failure(self, success: bool) -> None:
         if success:
-            print(".", end="")
+            print(".", end="", flush=True)
         else:
-            print("F", end="")
+            print("F", end="", flush=True)
 
     def _print_tested_relation_level_all(self, success: bool) -> None:
         raise NotImplementedError

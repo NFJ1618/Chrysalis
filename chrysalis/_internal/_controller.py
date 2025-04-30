@@ -83,7 +83,11 @@ def run[T, R](
     )
     relation_chains = search_space.generate_chains(num_chains=num_chains)
     writer = TerminalUIWriter(verbosity=verbosity)
-    writer.print_header()
+    writer.print_header(
+        search_strategy=search_strategy,
+        chain_length=chain_length,
+        num_chains=num_chains,
+    )
 
     with TemporarySqlite3RelationConnection() as (conn, db_path):
         engine = Engine(
@@ -95,7 +99,8 @@ def run[T, R](
             num_processes=num_processes,
         )
         engine.execute(relation_chains)
+        conn = engine.results_to_duckdb()
 
     writer.print_failed_relations()
 
-    return engine.results_to_duckdb()
+    return conn

@@ -218,6 +218,9 @@ VALUES (?, ?, ?, ?);
 
         previous_transformation_id: str | None = None
         previous_inputs = list(self._input_data.values())
+
+        # print(previous_inputs[0])
+
         previous_results = results
         for link_index, relation in enumerate(relation_chain):
             current_inputs: list[T] = []
@@ -227,6 +230,8 @@ VALUES (?, ?, ?, ?);
                 current_inputs.append(  # NOQA: PERF401
                     relation.apply_transform(prev_input)
                 )
+
+            # print(current_inputs[0])
 
             current_results: list[R] = []
             for curr_input in current_inputs:
