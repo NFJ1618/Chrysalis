@@ -1,10 +1,10 @@
 import random
 
-MAX_DEPTH = 1  # Depth control: 0 = flat, 1 = slight nesting, etc.
+MAX_DEPTH = 1 # Depth control: 0 = flat, 1 = slight nesting, etc.
 
 def generate_number() -> str:
     """Generate a number between 1 and 9."""
-    return str(random.randint(1, 9))
+    return str(random.randint(1, 20))
 
 def generate_factor(depth=0) -> str:
     """Generate a factor: number or (expression), respecting max depth."""

@@ -10,8 +10,19 @@ EXPERTISE_MAPPING = {
     6: "You are a world-class expert in mathematics."
 }
 
+COT_MAPPING = {
+    0: "Only provide the final answer. Do not show any steps or reasoning.",
+    1: "Provide the final answer with one line of working.",
+    2: "Show only the few mathematical steps needed to solve the problem. No explanations.",
+    3: "For each step, show the calculation and justify what is being done. End with the final answer."
+}
+
 MAX_IRRELEVANT_CONTEXT = 50
 MIN_IRRELEVANT_CONTEXT = 0
+MAX_TEMPERATURE = 0.8
+MIN_TEMPERATURE = 0
+MIN_COT = 0
+MAX_COT = 3
 
 def increase_expertise(prompt: Dict[str, Any]) -> Dict[str, Any]:
     prompt = prompt.copy()
@@ -47,4 +58,32 @@ def map_irrelevant_context(prompt: Dict[str, Any], context: List[str], context_w
     """Convert context number into sentences."""
     level = prompt.get("irrelevant_context", 0)
     return random.choices(context, weights=context_weights, k=level)
+
+def increase_temperature(prompt: Dict[str, Any]) -> Dict[str, Any]:
+    prompt = prompt.copy()
+    if prompt["temperature"] < MAX_TEMPERATURE:
+        prompt["temperature"] += 0.2
+    return prompt
+
+def decrease_temperature(prompt: Dict[str, Any]) -> Dict[str, Any]:
+    prompt = prompt.copy()
+    if prompt["temperature"] > MIN_IRRELEVANT_CONTEXT:
+        prompt["temperature"] -= 0.2
+    return prompt
     
+def increase_cot(prompt: Dict[str, Any]) -> Dict[str, Any]:
+    prompt = prompt.copy()
+    if prompt["cot"] < MAX_COT:
+        prompt["cot"] += 1
+    return prompt
+
+def decrease_cot(prompt: Dict[str, Any]) -> Dict[str, Any]:
+    prompt = prompt.copy()
+    if prompt["cot"] > MIN_COT:
+        prompt["cot"] -= 1
+    return prompt
+
+def cot_to_system_instruction(prompt: Dict[str, Any]) -> str:
+    """Convert expertise_level into the system instruction string."""
+    level = prompt.get("cot", 2)
+    return COT_MAPPING.get(level, "")
