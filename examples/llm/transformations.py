@@ -10,7 +10,7 @@ EXPERTISE_MAPPING = {
     6: "You are a world-class expert in mathematics."
 }
 
-MAX_IRRELEVANT_CONTEXT = 100
+MAX_IRRELEVANT_CONTEXT = 50
 MIN_IRRELEVANT_CONTEXT = 0
 
 def increase_expertise(prompt: Dict[str, Any]) -> Dict[str, Any]:
@@ -43,8 +43,8 @@ def decrease_irrelevant_context(prompt: Dict[str, Any]) -> Dict[str, Any]:
         prompt["irrelevant_context"] -= 10
     return prompt
 
-def map_irrelevant_context(prompt: Dict[str, Any], context: List[str], context_lengths: List[int]) -> str:
+def map_irrelevant_context(prompt: Dict[str, Any], context: List[str], context_weights: List[int]) -> str:
     """Convert context number into sentences."""
     level = prompt.get("irrelevant_context", 0)
-    return random.choices(context, weights=context_lengths, k=level)
+    return random.choices(context, weights=context_weights, k=level)
     

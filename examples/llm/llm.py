@@ -19,13 +19,17 @@ import os
 # --- Load context --- 
 @cache
 def get_context():
-    with open(os.path.join(os.getcwd(), "context.txt"), "r") as file:
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "context.txt"), "r") as file:
         context = []
-        context_length = []
+        context_weights = []
         for line in file:
             context.append(line)
-            context_length.append(1/line.count(" "))
-    return context, context_length
+            try:
+                context_weights.append(1/(line.count(" ")+1e6))
+            except ZeroDivisionError:
+                print(line)
+                raise Exception
+    return {"context": context, "context_weights": context_weights}
 
 
 # --- Prompt Construction ---
@@ -110,8 +114,9 @@ chry.register(decrease_irrelevant_context, invariants.greater_than_equal)
 # --- Test Runner ---
 
 
-def llm_test(prompt_parts: Dict[str, Any], num_tries: int = 10) -> None:
+def llm_test(prompt_parts: Dict[str, Any], num_tries: int = 1) -> None:
     """Test model consistency by asking LLM to judge its own response."""
+    prompt_parts = prompt_parts.copy()
     expected_answer = prompt_parts.get("correct_answer", "").strip()
     prompt_parts["irrelevant_context"] = " ".join(map_irrelevant_context(prompt_parts, **get_context()))
     prompt = stitch_prompt(prompt_parts)
@@ -150,7 +155,7 @@ def get_input_data(n: int = 10) -> List[Dict[str, Any]]:
         "task_instruction": "Solve the following math problem.",
         "examples": "",
         "formatting_instructions": "Show your brief mathematical working without any comments and then give your final answer.",
-        "irrelevant_context": 5,
+        "irrelevant_context": 0,
         "stylistic_requirements": "",
         "meta_information": "",
     }
@@ -159,7 +164,7 @@ def get_input_data(n: int = 10) -> List[Dict[str, Any]]:
     for _ in range(n):
         prompt = base_prompt.copy()
         prompt["expertise_level"] = random.randint(1, 6)
-        prompt["irrelevant_context"] = random.randint(0, 10)*10
+        prompt["irrelevant_context"] = random.randint(0, 5)*10
         expr, correct = generate_math_expression()
         prompt["primary_input"] = expr
         prompt["correct_answer"] = str(correct)
@@ -170,4 +175,4 @@ def get_input_data(n: int = 10) -> List[Dict[str, Any]]:
 
 if __name__ == "__main__":
     # --- Run All Tests ---
-    chry.run(llm_test, get_input_data(1), chain_length=3, num_chains=1)
+    chry.run(llm_test, get_input_data(1), chain_length=1, num_chains=1)

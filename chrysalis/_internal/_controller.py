@@ -99,6 +99,7 @@ def run[T, R](
             num_processes=num_processes,
         )
         engine.execute(relation_chains)
+        conn.close()
         conn = engine.results_to_duckdb()
 
     writer.print_failed_relations()
