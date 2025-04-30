@@ -6,6 +6,7 @@ from chrysalis._internal import _tables as tables
 from chrysalis._internal._engine import Engine
 from chrysalis._internal._relation import KnowledgeBase
 from chrysalis._internal._search import SearchSpace, SearchStrategy
+from chrysalis._internal._writer import TerminalUIWriter, Verbosity
 
 _CURRENT_KNOWLEDGE_BASE: KnowledgeBase | None = None
 """
@@ -46,6 +47,7 @@ def run[T, R](
     chain_length: int = 10,
     num_chains: int = 10,
     num_processes: int = 1,
+    verbosity: Verbosity = Verbosity.FAILURE,
 ) -> duckdb.DuckDBPyConnection | None:
     """
     Run metamorphic testing on the SUT using previously registered relations.
@@ -66,8 +68,10 @@ def run[T, R](
     num_chains : int, optional
         The number of metamorphic chains to generate. The number of chains defaults to
         10.
-    num_processes: int, optional
+    num_processes : int, optional
         The number of processes to use when performing metamorphic testing.
+    verbosity : Verbosity, optional
+        The verbosity of logging during execution.
     """
     if _CURRENT_KNOWLEDGE_BASE is None:
         raise RuntimeError(
@@ -84,16 +88,20 @@ def run[T, R](
             chain_length=chain_length,
         )
         relation_chains = search_space.generate_chains(num_chains=num_chains)
+        writer = TerminalUIWriter(verbosity=verbosity)
+        writer.print_header()
 
         engine = Engine(
             sut=sut,
             sqlite_conn=conn,
             input_data=input_data,
             sqlite_db=db_path,
+            writer=writer,
             num_processes=num_processes,
         )
         engine.execute(relation_chains)
         conn.close()
         duckdb_conn = engine.results_to_duckdb()
 
+    writer.print_failed_relations()
     return duckdb_conn
