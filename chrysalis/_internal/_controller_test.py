@@ -17,7 +17,9 @@ def test_single_register() -> None:
 
     assert knowledge_base is not None
     assert len(knowledge_base.relations) == 1
-    assert knowledge_base.relations[0].transformation_name == "identity"
+    assert (
+        next(iter(knowledge_base.relations.values())).transformation_name == "identity"
+    )
 
 
 def test_multiple_register() -> None:
@@ -39,12 +41,22 @@ def test_multiple_register() -> None:
 
     assert knowledge_base is not None
     assert len(knowledge_base.relations) == 2
-    assert {relation.transformation_name for relation in knowledge_base.relations} == {
+    assert {
+        relation.transformation_name for relation in knowledge_base.relations.values()
+    } == {
         "identity",
         "inverse",
     }
-    assert set(knowledge_base._relations["identity"].invariants) == {
+    assert set(
+        knowledge_base._relations[
+            knowledge_base.transformation_ids["identity"]
+        ].invariants.values()
+    ) == {
         invariants.equals,
         invariants.is_same_sign,
     }
-    assert knowledge_base._relations["inverse"].invariants == [invariants.not_equals]
+    assert set(
+        knowledge_base._relations[
+            knowledge_base.transformation_ids["inverse"]
+        ].invariants.values()
+    ) == {invariants.not_equals}

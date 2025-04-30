@@ -3,7 +3,7 @@ import ast
 import pytest
 
 from chrysalis._internal import _invariants as invariants
-from chrysalis._internal._relation import Relation
+from chrysalis._internal._relation import KnowledgeBase, Relation
 
 
 @pytest.fixture
@@ -69,35 +69,61 @@ def subtract_1_from_expression(expr: ast.Expression) -> ast.Expression:
 
 
 @pytest.fixture
-def correct_relation_1() -> Relation:
-    relation = Relation[ast.Expression, float](transformation=identity)
-    relation.add_invariant(invariant=invariants.equals)
-    return relation
+def mock_knowledge_base() -> KnowledgeBase:
+    knowledge_base: KnowledgeBase[ast.Expression, float] = KnowledgeBase()
 
-
-@pytest.fixture
-def correct_relation_2() -> Relation:
-    relation = Relation[ast.Expression, float](transformation=inverse)
-    relation.add_invariant(invariant=invariants.not_same_sign)
-    return relation
-
-
-@pytest.fixture
-def correct_relation_3() -> Relation:
-    relation = Relation[ast.Expression, float](
-        transformation=subtract_1_from_expression
+    # Correct relations
+    knowledge_base.register(
+        transformation=identity,
+        invariant=invariants.equals,
     )
-    relation.add_invariant(invariant=invariants.less_than)
-    return relation
+    knowledge_base.register(
+        transformation=inverse,
+        invariant=invariants.not_same_sign,
+    )
+    knowledge_base.register(
+        transformation=add_1_to_expression,
+        invariant=invariants.greater_than,
+    )
+
+    # Inorrect relations, (invariant `equals` will fail).
+    knowledge_base.register(
+        transformation=subtract_1_from_expression,
+        invariant=invariants.less_than,
+    )
+    knowledge_base.register(
+        transformation=subtract_1_from_expression,
+        invariant=invariants.equals,
+    )
+    return knowledge_base
 
 
 @pytest.fixture
-def incorrect_relation_1() -> Relation:
-    relation = Relation[ast.Expression, float](
-        transformation=subtract_1_from_expression
-    )
-    relation.add_invariant(invariant=invariants.equals)
-    return relation
+def correct_relation_1(mock_knowledge_base: KnowledgeBase) -> Relation:
+    return mock_knowledge_base.relations[
+        mock_knowledge_base.transformation_ids["identity"]
+    ]
+
+
+@pytest.fixture
+def correct_relation_2(mock_knowledge_base: KnowledgeBase) -> Relation:
+    return mock_knowledge_base.relations[
+        mock_knowledge_base.transformation_ids["inverse"]
+    ]
+
+
+@pytest.fixture
+def correct_relation_3(mock_knowledge_base: KnowledgeBase) -> Relation:
+    return mock_knowledge_base.relations[
+        mock_knowledge_base.transformation_ids["add_1_to_expression"]
+    ]
+
+
+@pytest.fixture
+def incorrect_relation_1(mock_knowledge_base: KnowledgeBase) -> Relation:
+    return mock_knowledge_base.relations[
+        mock_knowledge_base.transformation_ids["subtract_1_from_expression"]
+    ]
 
 
 @pytest.fixture

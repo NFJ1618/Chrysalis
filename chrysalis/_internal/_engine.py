@@ -1,95 +1,12 @@
 import pickle
 import sqlite3
-import uuid
 from collections.abc import Callable
 from pathlib import Path
-from tempfile import TemporaryDirectory
 
 import duckdb
 
+from chrysalis._internal import _tables as tables
 from chrysalis._internal._relation import Relation
-
-_CREATE_INPUT_DATA_TABLE = """
-CREATE TABLE input_data (
-    id TEXT PRIMARY KEY,
-    obj BLOB NOT NULL
-);
-"""
-
-_CREATE_APPLIED_TRANSFORMATION_TABLE = """
-CREATE TABLE applied_transformation (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    previous_transformation TEXT,
-    link_index INT NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-
-    FOREIGN KEY (previous_transformation) REFERENCES applied_transformation(id)
-);
-"""
-
-_CREATE_INVARIANT_TABLE = """
-CREATE TABLE failed_invariant (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    applied_transformation TEXT NOT NULL,
-    input_data TEXT NOT NULL,
-
-    FOREIGN KEY (applied_transformation) REFERENCES applied_transformation(id),
-    FOREIGN KEY (input_data) REFERENCES input_data(id)
-);
-"""
-
-
-class TemporarySqlite3RelationConnection(TemporaryDirectory):
-    """
-    A temporary sqlite3 database designed to be used for transactional inserts.
-
-    During metamorphic testing, we want to record the order of which transformations are
-    applied and the result of each invariant tested in a relation chain. This data is
-    available after each step that is executed in the engine. By definition, this
-    pattern follows the transactional processing pattern and thus justifies using
-    sqlite3.
-
-    This database maintains two tables that are required to store the results of
-    execution of a relation chain. The first table is the `transformation` table which
-    records the order of which tranformations are applied to input data. The second
-    table `failed_invariant` represents the result of a individual invariant tested for
-    a given transformation that failed. It is important to note, it is possible that
-    multiple invariants apply to the same transformation and thus a single transformation
-    can have multiple invariants that fail.
-
-    Given this database design, it is not required to store the result of
-    transformations on the input data. Instead, the transformations can be reapplied to
-    the input data to acheive indiviudal instances of transformed data that is
-    requested. This dramatically reduces the amount of data that is required to be
-    stored.
-
-    Since this is a temporary sqlite3 connection, it is expected that all data will be
-    extracted before exiting the context manager.
-    """
-
-    def __enter__(self, *args, **kwargs) -> tuple[sqlite3.Connection, Path]:
-        """
-        Create a database in the temporary directory created during initialization.
-
-        In addition to creating the database, configure the sqlite3 database rules and
-        create the relevant tables.
-        """
-        temp_dir = super().__enter__(*args, **kwargs)
-        # Arguably, this context manager should be based off `TemporaryFile` instead of
-        # `TemporaryDirectory`, but this design was chosen due to ease of
-        # implementation.
-        db_path = Path(temp_dir) / "chry.db"
-        conn = sqlite3.connect(db_path)
-
-        # Sqlite3 doesn't enfore foreign key existance by default.
-        conn.execute("PRAGMA foreign_keys = ON")
-
-        conn.execute(_CREATE_INPUT_DATA_TABLE)
-        conn.execute(_CREATE_APPLIED_TRANSFORMATION_TABLE)
-        conn.execute(_CREATE_INVARIANT_TABLE)
-        return conn, db_path
 
 
 class Engine[T, R]:
@@ -143,17 +60,13 @@ class Engine[T, R]:
             )
             self._input_data[obj_id] = input_obj
 
-    def _generate_uuid(self) -> str:
-        """Generate a 16 byte random uuid using the UUID4 specification."""
-        return uuid.uuid4().hex
-
     def _insert_input_data(
         self,
         obj: T,
         cursor: sqlite3.Cursor,
     ) -> str:
         """Insert a record into the `input_data` table."""
-        input_data_id = self._generate_uuid()
+        input_data_id = tables.generate_uuid()
         cursor.execute(
             """
 INSERT INTO input_data (id, obj)
@@ -165,37 +78,44 @@ VALUES (?, ?);
 
     def _insert_applied_transformation(
         self,
-        name: str,
-        previous_transformation: str | None,
+        transformation: str,
+        relation_chain_id: str,
         link_index: int,
         cursor: sqlite3.Cursor,
     ) -> str:
         """Insert a record into the `applied_transformation` table."""
-        applied_transformation_id = self._generate_uuid()
+        applied_transformation_id = tables.generate_uuid()
         cursor.execute(
             """
-INSERT INTO applied_transformation (id, name, previous_transformation, link_index)
-VALUES (?, ?, ?, ?);
+INSERT INTO applied_transformation
+    (id, transformation, relation_chain_id, link_index)
+VALUES
+    (?, ?, ?, ?);
 """,
-            (applied_transformation_id, name, previous_transformation, link_index),
+            (
+                applied_transformation_id,
+                transformation,
+                relation_chain_id,
+                link_index,
+            ),
         )
         return applied_transformation_id
 
     def _insert_failed_invariant(
         self,
-        name: str,
+        invariant: str,
         applied_transformation: str,
         input_data: str,
         cursor: sqlite3.Cursor,
     ) -> None:
         """Insert a record into the `failed_invariant` table."""
-        invaraint_id = self._generate_uuid()
+        invariant_id = tables.generate_uuid()
         cursor.execute(
             """
-INSERT INTO failed_invariant (id, name, applied_transformation, input_data)
+INSERT INTO failed_invariant (id, invariant, applied_transformation, input_data)
 VALUES (?, ?, ?, ?);
         """,
-            (invaraint_id, name, applied_transformation, input_data),
+            (invariant_id, invariant, applied_transformation, input_data),
         )
 
     def _execute_chain(
@@ -213,7 +133,7 @@ VALUES (?, ?, ?, ?);
             # error.
             results.append(self._sut(curr_input))  # NOQA: PERF401
 
-        previous_transformation_id: str | None = None
+        relation_chain_id = tables.generate_uuid()
         previous_inputs = list(self._input_data.values())
         previous_results = results
         for link_index, relation in enumerate(relation_chain):
@@ -232,24 +152,23 @@ VALUES (?, ?, ?, ?);
                 current_results.append(self._sut(curr_input))  # NOQA: PERF401
 
             current_transformation_id = self._insert_applied_transformation(
-                name=relation.transformation_name,
-                previous_transformation=previous_transformation_id,
+                transformation=relation.transformation_id,
+                relation_chain_id=relation_chain_id,
                 link_index=link_index,
                 cursor=cursor,
             )
-            for invariant in relation.invariants:
+            for invariant_id, invariant in relation.invariants.items():
                 for i, (prev_result, curr_result) in enumerate(
-                    zip(previous_results, current_results, strict=False)
+                    zip(previous_results, current_results, strict=True)
                 ):
                     if not invariant(curr_result, prev_result):
                         self._insert_failed_invariant(
-                            name=invariant.__name__,
+                            invariant=invariant_id,
                             applied_transformation=current_transformation_id,
                             input_data=input_data_ids[i],
                             cursor=cursor,
                         )
 
-            previous_transformation_id = current_transformation_id
             previous_inputs = current_inputs
             previous_results = current_results
 
@@ -273,7 +192,7 @@ VALUES (?, ?, ?, ?);
 
     def results_to_duckdb(self) -> duckdb.DuckDBPyConnection:
         """
-        Convert the sqlite3 database into a duckdb database.
+        Convert the sqlite3 database kept during execution into a duckdb database.
 
         Sqlite databases are designed for transactional processing, which fits our use
         case when inserting transaction and invariant records, especially if the program
@@ -281,54 +200,4 @@ VALUES (?, ?, ?, ?);
         convert the database into a duckdb database due to duckdb's better performance
         on analytical queries and better data compression.
         """
-        duckdb_conn = duckdb.connect()
-
-        # Sqlite needs to be installed within duckdb before `sqlite_scan` can be used.
-        duckdb_conn.execute("INSTALL sqlite;")
-
-        # The schema of the tables needs to be specified before records are inserted. If
-        # the schema is inferred from sqlite, it may be wrong.
-        duckdb_conn.execute(_CREATE_INPUT_DATA_TABLE)
-        duckdb_conn.execute(_CREATE_APPLIED_TRANSFORMATION_TABLE)
-        duckdb_conn.execute(_CREATE_INVARIANT_TABLE)
-
-        duckdb_conn.execute(
-            """
-INSERT INTO input_data
-SELECT * FROM sqlite_scan(?, ?);
-                """,
-            (str(self._sqlite_db), "input_data"),
-        )
-
-        # Unfortunately, there is a bug in `duckdb` with self-referential tables when
-        # batch loading. To work around this issue, we can partition the data ourselves
-        # into batches per `link_index` and insert the batches sequentially.
-        # https://github.com/duckdb/duckdb/issues/10574
-        match duckdb_conn.execute(
-            "SELECT MAX(link_index) FROM sqlite_scan(?, ?)",
-            (str(self._sqlite_db), "applied_transformation"),
-        ).fetchone():
-            case (max_link_index,):
-                pass
-            case _:
-                raise RuntimeError(
-                    "The chrysalis sqlite database has been tampered with during execution, exiting."
-                )
-
-        for i in range(max_link_index + 1):
-            duckdb_conn.execute(
-                """
-INSERT INTO applied_transformation
-SELECT * FROM sqlite_scan(?, ?) WHERE link_index = ?;
-                    """,
-                (str(self._sqlite_db), "applied_transformation", i),
-            )
-
-        duckdb_conn.execute(
-            """
-INSERT INTO failed_invariant
-SELECT * FROM sqlite_scan(?, ?);
-                """,
-            (str(self._sqlite_db), "failed_invariant"),
-        )
-        return duckdb_conn
+        return tables.sqlite_to_duckdb(self._sqlite_db)

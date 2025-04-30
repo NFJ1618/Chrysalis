@@ -14,9 +14,12 @@ def test_create_relation() -> None:
         invariant=invariants.equals,
     )
 
-    relation = knowledge_base.relations[0]
+    assert len(knowledge_base.relations) == 1
+    relation = next(iter(knowledge_base.relations.values()))
     assert relation.transformation_name == "identity"
-    assert relation.invariants[0].__name__ == "equals"
+    assert [invariant.__name__ for invariant in relation.invariants.values()] == [
+        "equals"
+    ]
 
 
 def test_create_relation_lambda() -> None:

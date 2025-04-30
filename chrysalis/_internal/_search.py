@@ -30,7 +30,10 @@ class SearchSpace:
         match self._strategy:
             case SearchStrategy.RANDOM:
                 orderings = [
-                    random.choices(self._knowledge_base.relations, k=self._chain_length)
+                    random.choices(
+                        list(self._knowledge_base.relations.values()),
+                        k=self._chain_length,
+                    )
                     for _ in range(num_chains)
                 ]
             case SearchStrategy.EXHAUSTIVE:

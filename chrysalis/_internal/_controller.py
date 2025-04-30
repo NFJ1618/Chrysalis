@@ -2,7 +2,8 @@ from collections.abc import Callable
 
 import duckdb
 
-from chrysalis._internal._engine import Engine, TemporarySqlite3RelationConnection
+from chrysalis._internal import _tables as tables
+from chrysalis._internal._engine import Engine
 from chrysalis._internal._relation import KnowledgeBase
 from chrysalis._internal._search import SearchSpace, SearchStrategy
 
@@ -72,14 +73,18 @@ def run[T, R](
         raise RuntimeError(
             "No metamorphic relations have been registered in the current session, exiting."
         )
-    search_space = SearchSpace(
-        knowledge_base=_CURRENT_KNOWLEDGE_BASE,
-        strategy=search_strategy,
-        chain_length=chain_length,
-    )
-    relation_chains = search_space.generate_chains(num_chains=num_chains)
 
-    with TemporarySqlite3RelationConnection() as (conn, db_path):
+    with tables.TemporarySqlite3RelationConnection(_CURRENT_KNOWLEDGE_BASE) as (
+        conn,
+        db_path,
+    ):
+        search_space = SearchSpace(
+            knowledge_base=_CURRENT_KNOWLEDGE_BASE,
+            strategy=search_strategy,
+            chain_length=chain_length,
+        )
+        relation_chains = search_space.generate_chains(num_chains=num_chains)
+
         engine = Engine(
             sut=sut,
             sqlite_conn=conn,
@@ -89,4 +94,7 @@ def run[T, R](
         )
         engine.execute(relation_chains)
 
-    return engine.results_to_duckdb()
+        duckdb_conn = engine.results_to_duckdb()
+        conn.close()
+
+    return duckdb_conn
