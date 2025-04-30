@@ -2,10 +2,14 @@ from typing import Dict, Any, List
 import random
 import requests
 
-from transformations import expertise_to_system_instruction, increase_expertise, decrease_expertise
+from transformations import (
+    expertise_to_system_instruction,
+    increase_expertise,
+    decrease_expertise,
+)
 from generate_expression import generate_math_expression
-from chrysalis import register, run
-from chrysalis._internal._invariants import greater_than_equal, less_than_equal
+import chrysalis as chry
+from chrysalis import invariants
 
 
 # --- Prompt Construction ---
@@ -20,22 +24,20 @@ def stitch_prompt(prompt_parts: Dict[str, Any]) -> str:
         prompt_parts.get("primary_input", ""),
         prompt_parts.get("formatting_instructions", ""),
         prompt_parts.get("stylistic_requirements", ""),
-        prompt_parts.get("meta_information", "")
+        prompt_parts.get("meta_information", ""),
     ]
     return "\n\n".join(section for section in sections if section)
 
 
 # --- LLM Evaluation ---
 
-def ollama_evaluate(prompt: str, model: str = "mistral", format_prefix: str = "Answer:") -> str:
+
+def ollama_evaluate(
+    prompt: str, model: str = "mistral", format_prefix: str = "Answer:"
+) -> str:
     """Call Ollama API and return the model's response."""
     url = "http://localhost:11434/api/generate"
-    payload = {
-        "model": model,
-        "prompt": prompt,
-        "temperature": 0.2,
-        "stream": False
-    }
+    payload = {"model": model, "prompt": prompt, "temperature": 0.2, "stream": False}
 
     try:
         response = requests.post(url, json=payload)
@@ -45,7 +47,9 @@ def ollama_evaluate(prompt: str, model: str = "mistral", format_prefix: str = "A
         return f"{format_prefix} error ({e})"
 
 
-def ollama_judge(problem: str, response: str, correct_answer: str, model="mistral") -> str:
+def ollama_judge(
+    problem: str, response: str, correct_answer: str, model="mistral"
+) -> str:
     """
     Ask the LLM to judge whether the response matches the correct answer.
     Returns 'yes' or 'no'.
@@ -66,7 +70,7 @@ Do not explain. Only say "yes" or "no".
         "model": model,
         "prompt": judge_prompt,
         "temperature": 0.0,  # Make judging deterministic
-        "stream": False
+        "stream": False,
     }
 
     try:
@@ -80,8 +84,8 @@ Do not explain. Only say "yes" or "no".
 
 # --- Transformation Registration ---
 
-register(increase_expertise, greater_than_equal)
-register(decrease_expertise, less_than_equal)
+chry.register(increase_expertise, invariants.greater_than_equal)
+chry.register(decrease_expertise, invariants.less_than_equal)
 
 
 # --- Test Runner ---
@@ -91,7 +95,6 @@ def llm_test(prompt_parts: Dict[str, Any], num_tries: int = 10) -> None:
     expected_answer = prompt_parts.get("correct_answer", "").strip()
     prompt = stitch_prompt(prompt_parts)
     problem = prompt_parts["primary_input"]
-    
     print("Prompt:", prompt)
     print("Expected:", expected_answer)
 
@@ -110,9 +113,10 @@ def llm_test(prompt_parts: Dict[str, Any], num_tries: int = 10) -> None:
         print(f"Running Accuracy: {correct / (i + 1):.2%}")
 
     final_accuracy = correct / num_tries
-    print(f"[Expertise {prompt_parts['expertise_level']}] Final Accuracy: {final_accuracy:.2%} | Target: {expected_answer}")
+    print(
+        f"[Expertise {prompt_parts['expertise_level']}] Final Accuracy: {final_accuracy:.2%} | Target: {expected_answer}"
+    )
     return final_accuracy
-
 
 
 # --- Input Generation ---
@@ -126,7 +130,7 @@ def get_input_data(n: int = 10) -> List[Dict[str, Any]]:
         "formatting_instructions": "Show your brief mathematical working without any comments and then give your final answer.",
         "irrelevant_context": "The weather in Paris is sunny today.",
         "stylistic_requirements": "",
-        "meta_information": ""
+        "meta_information": "",
     }
 
     data = []
@@ -140,6 +144,8 @@ def get_input_data(n: int = 10) -> List[Dict[str, Any]]:
 
     return data
 
+
 if __name__ == "__main__":
     # --- Run All Tests ---
-    run(llm_test, get_input_data(3), chain_length=3, num_chains=1)
+    chry.run(llm_test, get_input_data(3), chain_length=3, num_chains=1)
+
