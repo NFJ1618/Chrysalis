@@ -8,6 +8,7 @@ from tempfile import TemporaryDirectory
 import duckdb
 
 from chrysalis._internal._relation import Relation
+from chrysalis._internal._writer import TerminalUIWriter
 
 _CREATE_INPUT_DATA_TABLE = """
 CREATE TABLE input_data (
@@ -123,6 +124,7 @@ class Engine[T, R]:
         input_data: list[T],
         sqlite_conn: sqlite3.Connection,
         sqlite_db: Path,
+        writer: TerminalUIWriter,
         num_processes: int = 8,
     ):
         if num_processes > 1:
@@ -131,6 +133,7 @@ class Engine[T, R]:
         self._sut = sut
         self._conn = sqlite_conn
         self._sqlite_db = sqlite_db
+        self._writer = writer
         self._num_processes = num_processes
 
         # Insert input data into database and store uuid for future reference.
@@ -237,17 +240,28 @@ VALUES (?, ?, ?, ?);
                 link_index=link_index,
                 cursor=cursor,
             )
+            failed_invariants: set[str] = set()
             for invariant in relation.invariants:
                 for i, (prev_result, curr_result) in enumerate(
                     zip(previous_results, current_results, strict=False)
                 ):
                     if not invariant(curr_result, prev_result):
+                        failed_invariants.add(invariant.__name__)
                         self._insert_failed_invariant(
                             name=invariant.__name__,
                             applied_transformation=current_transformation_id,
                             input_data=input_data_ids[i],
                             cursor=cursor,
                         )
+
+            if len(failed_invariants) == 0:
+                self._writer.print_tested_relation(success=True)
+            else:
+                self._writer.print_tested_relation(success=False)
+                self._writer.store_failed_relation(
+                    failed_relation=relation.transformation_name,
+                    failed_invariants=list(failed_invariants),
+                )
 
             previous_transformation_id = current_transformation_id
             previous_inputs = current_inputs
