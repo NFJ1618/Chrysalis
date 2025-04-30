@@ -1,36 +1,21 @@
 import ast
 import pickle
-from pathlib import Path
 
-from chrysalis._internal._engine import Engine, TemporarySqlite3RelationConnection
-from chrysalis._internal._relation import Relation
+from chrysalis._internal._engine import Engine
+from chrysalis._internal._relation import KnowledgeBase, Relation
+from chrysalis._internal._tables import TemporarySqlite3RelationConnection
 from chrysalis._internal.conftest import eval_expr
-
-
-def test_temporary_sqlite_db_deletes() -> None:
-    with TemporarySqlite3RelationConnection() as (_, db_path):
-        pass
-    assert not db_path.exists()
-
-
-def test_temporary_sqlite_db_deletes_error() -> None:
-    p: Path | None = None
-    try:
-        with TemporarySqlite3RelationConnection() as (_, db_path):
-            p = db_path
-            raise RuntimeError(  # NOQA: TRY301
-                "This runtime error is designed to ensure the sqlite database is deleted even if an error occurs during execution."
-            )
-    except Exception:  # NOQA: BLE001
-        assert p is not None
-        assert not p.exists()
 
 
 def test_successful_relation_chain(
     sample_expression_1: ast.Expression,
     correct_relation_chain: list[Relation[ast.Expression, float]],
+    mock_knowledge_base: KnowledgeBase,
 ) -> None:
-    with TemporarySqlite3RelationConnection() as (temp_conn, db_path):
+    with TemporarySqlite3RelationConnection(knowledge_base=mock_knowledge_base) as (
+        temp_conn,
+        db_path,
+    ):
         engine = Engine(
             sut=eval_expr,
             sqlite_conn=temp_conn,
@@ -52,12 +37,13 @@ def test_successful_relation_chain(
     assert [
         ("identity", 0),
         ("inverse", 1),
-        ("subtract_1_from_expression", 2),
+        ("add_1_to_expression", 2),
     ] == conn.execute(
         """
-SELECT name, link_index
-FROM applied_transformation
-ORDER BY link_index;
+SELECT trans.name, appl_trans.link_index
+FROM applied_transformation appl_trans
+INNER JOIN transformation trans ON appl_trans.transformation = trans.id
+ORDER BY appl_trans.link_index;
                  """
     ).fetchall()
 
@@ -67,8 +53,12 @@ ORDER BY link_index;
 def test_unsuccessful_relation_chain(
     sample_expression_1: ast.Expression,
     incorrect_relation_chain: list[Relation[ast.Expression, float]],
+    mock_knowledge_base: KnowledgeBase,
 ) -> None:
-    with TemporarySqlite3RelationConnection() as (temp_conn, db_path):
+    with TemporarySqlite3RelationConnection(knowledge_base=mock_knowledge_base) as (
+        temp_conn,
+        db_path,
+    ):
         engine = Engine(
             sut=eval_expr,
             sqlite_conn=temp_conn,
@@ -93,12 +83,17 @@ def test_unsuccessful_relation_chain(
         ("subtract_1_from_expression", 2),
     ] == conn.execute(
         """
-SELECT name, link_index
-FROM applied_transformation
-ORDER BY link_index;
+SELECT trans.name, appl_trans.link_index
+FROM applied_transformation appl_trans
+INNER JOIN transformation trans ON appl_trans.transformation = trans.id
+ORDER BY appl_trans.link_index;
                  """
     ).fetchall()
 
     assert [("equals",)] == conn.execute(
-        "SELECT name FROM failed_invariant;"
+        """
+SELECT inv.name
+FROM failed_invariant f_inv
+INNER JOIN invariant inv ON f_inv.invariant = inv.id;
+"""
     ).fetchall()
