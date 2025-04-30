@@ -111,6 +111,7 @@ def llm_test(prompt_parts: Dict[str, Any], num_tries: int = 10) -> None:
 
     final_accuracy = correct / num_tries
     print(f"[Expertise {prompt_parts['expertise_level']}] Final Accuracy: {final_accuracy:.2%} | Target: {expected_answer}")
+    return final_accuracy
 
 
 
