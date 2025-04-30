@@ -78,7 +78,7 @@ Do not explain. Only say "yes" or "no".
         response.raise_for_status()
         return response.json()["response"].strip().lower()
     except Exception as e:
-        print(f"Judging error: {e}")
+        # print(f"Judging error: {e}")
         return "no"
 
 
@@ -95,27 +95,27 @@ def llm_test(prompt_parts: Dict[str, Any], num_tries: int = 10) -> None:
     expected_answer = prompt_parts.get("correct_answer", "").strip()
     prompt = stitch_prompt(prompt_parts)
     problem = prompt_parts["primary_input"]
-    print("Prompt:", prompt)
-    print("Expected:", expected_answer)
+    # print("Prompt:", prompt)
+    # print("Expected:", expected_answer)
 
     correct = 0
 
     for i in range(num_tries):
         output = ollama_evaluate(prompt)
-        print(f"Output {i+1}:", output)
+        # print(f"Output {i+1}:", output)
 
         judgment = ollama_judge(problem, output, expected_answer)
-        print(f"Judgment {i+1}: {judgment}")
+        # print(f"Judgment {i+1}: {judgment}")
 
         if judgment == "yes":
             correct += 1
 
-        print(f"Running Accuracy: {correct / (i + 1):.2%}")
+        # print(f"Running Accuracy: {correct / (i + 1):.2%}")
 
     final_accuracy = correct / num_tries
-    print(
-        f"[Expertise {prompt_parts['expertise_level']}] Final Accuracy: {final_accuracy:.2%} | Target: {expected_answer}"
-    )
+    # print(
+        # f"[Expertise {prompt_parts['expertise_level']}] Final Accuracy: {final_accuracy:.2%} | Target: {expected_answer}"
+    # )
     return final_accuracy
 
 
