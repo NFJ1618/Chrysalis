@@ -6,10 +6,26 @@ from transformations import (
     expertise_to_system_instruction,
     increase_expertise,
     decrease_expertise,
+    increase_irrelevant_context,
+    decrease_irrelevant_context,
+    map_irrelevant_context,
 )
 from generate_expression import generate_math_expression
 import chrysalis as chry
 from chrysalis import invariants
+from functools import cache
+import os
+
+# --- Load context --- 
+@cache
+def get_context():
+    with open(os.path.join(os.getcwd(), "context.txt"), "r") as file:
+        context = []
+        context_length = []
+        for line in file:
+            context.append(line)
+            context_length.append(1/line.count(" "))
+    return context, context_length
 
 
 # --- Prompt Construction ---
@@ -87,6 +103,8 @@ Do not explain. Only say "yes" or "no".
 
 chry.register(increase_expertise, invariants.greater_than_equal)
 chry.register(decrease_expertise, invariants.less_than_equal)
+chry.register(increase_irrelevant_context, invariants.less_than_equal)
+chry.register(decrease_irrelevant_context, invariants.greater_than_equal)
 
 
 # --- Test Runner ---
@@ -95,6 +113,7 @@ chry.register(decrease_expertise, invariants.less_than_equal)
 def llm_test(prompt_parts: Dict[str, Any], num_tries: int = 10) -> None:
     """Test model consistency by asking LLM to judge its own response."""
     expected_answer = prompt_parts.get("correct_answer", "").strip()
+    prompt_parts["irrelevant_context"] = " ".join(map_irrelevant_context(prompt_parts, **get_context()))
     prompt = stitch_prompt(prompt_parts)
     problem = prompt_parts["primary_input"]
     # print("Prompt:", prompt)
@@ -131,7 +150,7 @@ def get_input_data(n: int = 10) -> List[Dict[str, Any]]:
         "task_instruction": "Solve the following math problem.",
         "examples": "",
         "formatting_instructions": "Show your brief mathematical working without any comments and then give your final answer.",
-        "irrelevant_context": "The weather in Paris is sunny today.",
+        "irrelevant_context": 5,
         "stylistic_requirements": "",
         "meta_information": "",
     }
@@ -140,6 +159,7 @@ def get_input_data(n: int = 10) -> List[Dict[str, Any]]:
     for _ in range(n):
         prompt = base_prompt.copy()
         prompt["expertise_level"] = random.randint(1, 6)
+        prompt["irrelevant_context"] = random.randint(0, 10)*10
         expr, correct = generate_math_expression()
         prompt["primary_input"] = expr
         prompt["correct_answer"] = str(correct)
