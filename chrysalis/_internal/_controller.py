@@ -94,5 +94,6 @@ def run[T, R](
         )
         engine.execute(relation_chains)
         conn.close()
+        duckdb_conn = engine.results_to_duckdb()
 
-    return engine.results_to_duckdb()
+    return duckdb_conn
