@@ -215,10 +215,11 @@ VALUES (?, ?, ?, ?);
             # TODO(nathanhuey44@gmail.com): Catch errors, exit gracefully, and report
             # error.
             results.append(self._sut(curr_input))  # NOQA: PERF401
-
         previous_transformation_id: str | None = None
         previous_inputs = list(self._input_data.values())
         previous_results = results
+        
+        self._writer.start_live()
         for link_index, relation in enumerate(relation_chain):
             current_inputs: list[T] = []
             for prev_input in previous_inputs:
@@ -255,17 +256,34 @@ VALUES (?, ?, ?, ?);
                         )
 
             if len(failed_invariants) == 0:
-                self._writer.print_tested_relation(success=True)
+                self._writer.print_tested_relation(
+                    success=True,
+                    metadata={
+                        "relation": relation.transformation_name,
+                        "index": link_index,
+                    },
+                )
             else:
-                self._writer.print_tested_relation(success=False)
                 self._writer.store_failed_relation(
                     failed_relation=relation.transformation_name,
                     failed_invariants=list(failed_invariants),
+                )
+                self._writer.print_tested_relation(
+                    success=False,
+                    metadata={
+                        "relation": relation.transformation_name,
+                        "index": link_index,
+                        "failed_invariants": list(failed_invariants),
+                    },
                 )
 
             previous_transformation_id = current_transformation_id
             previous_inputs = current_inputs
             previous_results = current_results
+        
+        self._writer.stop_live()
+        self._writer.print_failed_relations()
+        self._writer.print_summary()
 
     def execute(self, relation_chains: list[list[Relation]]) -> None:
         """
