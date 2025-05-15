@@ -20,7 +20,7 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
 ]
-dependencies = ["pytest>=8.0.0", "duckdb>=1.2.0"]
+dependencies = ["pytest>=8.0.0", "duckdb>=1.2.0", "rich>=14.0.0"]
 
 [tool.hatch.version]
 path = "chrysalis/__about__.py"
