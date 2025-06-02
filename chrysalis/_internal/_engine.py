@@ -81,7 +81,7 @@ class TemporarySqlite3RelationConnection(TemporaryDirectory):
         # Arguably, this context manager should be based off `TemporaryFile` instead of
         # `TemporaryDirectory`, but this design was chosen due to ease of
         # implementation.
-        self.db_path = Path(temp_dir) / "chry.db"
+        self.db_path = Path("C:\\Users\\jaipa\\CS\\Chrysalis\\chrys.db")
         self.conn = sqlite3.connect(self.db_path)
 
         # Sqlite3 doesn't enfore foreign key existance by default.

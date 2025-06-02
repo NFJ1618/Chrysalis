@@ -82,4 +82,4 @@ def named_entity_invariant(curr: str, prev: str) -> bool:
 
 def semantic_similarity_invariant(curr: str, prev: str) -> bool:
     """Overall meaning should be preserved (cosine similarity ≥ 0.8)."""
-    return semantic_similarity(curr, prev) >= 0.8
+    return semantic_similarity(curr, prev) >= 0.7

@@ -46,7 +46,7 @@ def ollama_rephrase(text: str, temperature: float = 0.7) -> str:
 
 def rephrase_paragraph_sut(prompt_parts: Dict[str, Any]) -> str:
     paragraph = prompt_parts.get("instruction", "")
-    temperature = prompt_parts.get("temperature", 0.7)
+    temperature = prompt_parts.get("temperature", 0.3)
     return ollama_rephrase(paragraph, temperature)
 
 # --- Input Loader ---
@@ -63,21 +63,40 @@ def get_input_data(n: int = 5, file_path: str = "data.json") -> List[Dict[str, A
 
 chry.register(add_irrelevant_context, named_entity_invariant)
 chry.register(add_irrelevant_context, entropy_invariant)
+chry.register(add_irrelevant_context, semantic_similarity_invariant)
+chry.register(add_irrelevant_context, lexical_diversity_invariant)
+chry.register(add_irrelevant_context, zipf_invariant)
 
+chry.register(shuffle_prompt_clauses, named_entity_invariant)
+chry.register(shuffle_prompt_clauses, entropy_invariant)
 chry.register(shuffle_prompt_clauses, semantic_similarity_invariant)
 chry.register(shuffle_prompt_clauses, lexical_diversity_invariant)
+chry.register(shuffle_prompt_clauses, zipf_invariant)
 
+chry.register(synonym_substitution, named_entity_invariant)
 chry.register(synonym_substitution, entropy_invariant)
+chry.register(synonym_substitution, semantic_similarity_invariant)
+chry.register(synonym_substitution, lexical_diversity_invariant)
 chry.register(synonym_substitution, zipf_invariant)
 
+chry.register(ask_as_paragraph, named_entity_invariant)
+chry.register(ask_as_paragraph, entropy_invariant)
 chry.register(ask_as_paragraph, semantic_similarity_invariant)
+chry.register(ask_as_paragraph, lexical_diversity_invariant)
+chry.register(ask_as_paragraph, zipf_invariant)
+
+chry.register(ask_as_list, named_entity_invariant)
+chry.register(ask_as_list, entropy_invariant)
+chry.register(ask_as_list, semantic_similarity_invariant)
 chry.register(ask_as_list, lexical_diversity_invariant)
+chry.register(ask_as_list, zipf_invariant)
+
 
 # --- Run Experiment ---
 if __name__ == "__main__":
     chry.run(
         sut=rephrase_paragraph_sut,
-        input_data=get_input_data(1),
-        chain_length=1,
-        num_chains=1
+        input_data=get_input_data(6),
+        chain_length=5,
+        num_chains=8
     )
