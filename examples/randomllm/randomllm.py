@@ -1,4 +1,5 @@
 from typing import Dict, Any, List
+import json
 import chrysalis as chry
 from transformations import (
     # paraphrase_prompt,
@@ -49,21 +50,12 @@ def rephrase_paragraph_sut(prompt_parts: Dict[str, Any]) -> str:
     return ollama_rephrase(paragraph, temperature)
 
 # --- Input Loader ---
-def get_input_data(n: int = 5) -> List[Dict[str, Any]]:
-    # Substitute with actual text samples
-    base_paragraphs = [
-        "Climate change refers to long-term alterations in temperature, precipitation, wind patterns, and other elements of the Earth's climate system. While some of these changes occur naturally due to volcanic eruptions or solar cycles, the rapid changes observed in recent decades are largely attributed to human activities such as burning fossil fuels and deforestation. These activities increase greenhouse gas concentrations in the atmosphere, which trap heat and lead to global warming. The consequences include rising sea levels, more extreme weather events, and disruptions to ecosystems and agriculture.",
-        
-        "The mitochondrion, often called the powerhouse of the cell, is an organelle responsible for generating most of the cell's supply of adenosine triphosphate (ATP), the molecule used for energy transfer within cells. Mitochondria play a crucial role in cellular respiration, converting oxygen and nutrients into ATP through a series of biochemical reactions. Beyond energy production, mitochondria are also involved in other essential processes such as signaling, cellular differentiation, and cell death. Their dysfunction is linked to a variety of diseases, including neurodegenerative disorders and metabolic syndromes.",
-        
-        "William Shakespeare’s influence on the English language and literature is both deep and enduring. His works, including plays, sonnets, and poems, introduced thousands of words and expressions still in use today. Shakespeare shaped dramatic structure and character development in ways that continue to influence modern storytelling, from stage to screen. His exploration of themes such as ambition, identity, love, and betrayal transcends time and culture. Even in contemporary cinema and television, echoes of his plots and dialogue are frequently found.",
-        
-        "Photosynthesis is a vital biochemical process through which green plants, algae, and certain bacteria convert sunlight into chemical energy. By using sunlight to transform carbon dioxide and water into glucose and oxygen, these organisms form the foundation of most food chains on Earth. The process takes place in the chloroplasts of plant cells and is essential for maintaining atmospheric oxygen levels. In addition to sustaining life, photosynthesis plays a critical role in regulating the Earth’s carbon cycle and mitigating climate change.",
-        
-        "The Great Wall of China is a massive structure built over centuries to protect Chinese states and empires from nomadic invasions and raids. Stretching thousands of miles across varied terrain, it includes walls, watchtowers, and fortresses constructed from stone, brick, tamped earth, and wood. Though not a single continuous wall, its various sections collectively represent a monumental feat of engineering and organization. Beyond its military function, the Wall also facilitated trade, border control, and cultural integration along the Silk Road. Today, it stands as a symbol of China’s historical strength and perseverance."
-    ]
+def get_input_data(n: int = 5, file_path: str = "data.json") -> List[Dict[str, Any]]:
+    with open(file_path, "r", encoding="utf-8") as file:
+        data = json.load(file)
 
-    return [{"instruction": text, "temperature": 0.5} for text in base_paragraphs[:n]]
+    # Each entry in the file should be a dict with at least a "paragraph" key
+    return [{"instruction": entry["paragraph"], "temperature": 0.5} for entry in data[:n]]
 
 # --- Register Transformations & Invariants ---
 # chry.register(paraphrase_prompt, semantic_similarity_invariant)

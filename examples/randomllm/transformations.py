@@ -1,9 +1,10 @@
 # transformations.py
 
 import random
-from typing import Dict
+from typing import Dict, Any
 import nltk
 from nltk.corpus import wordnet
+import json
 
 # Make sure required NLTK data is downloaded
 nltk.download('wordnet')
@@ -27,15 +28,12 @@ def synonym_replace(word: str) -> str:
 #     prompt['instruction'] = new_instruction.strip()
 #     return prompt
 
-def add_irrelevant_context(prompt: Dict[str, any]) -> Dict[str, any]:
-    DISTRACTORS = [
-        "Today is a sunny day.",
-        "This sentence has no relevance.",
-        "Please ignore this line.",
-        "Fun fact: cats sleep 70% of their lives.",
-    ]
+def add_irrelevant_context(prompt: Dict[str, Any], context_file: str = "bad_context.json") -> Dict[str, Any]:
+    with open(context_file, "r", encoding="utf-8") as file:
+        distractors = json.load(file)
+
     prompt = prompt.copy()
-    distractor = random.choice(DISTRACTORS)
+    distractor = random.choice(distractors)
     prompt['instruction'] = f"{distractor} {prompt.get('instruction', '')}"
     return prompt
 
@@ -85,24 +83,3 @@ def shuffle_prompt_clauses(prompt: Dict[str, any]) -> Dict[str, any]:
     random.shuffle(clauses)
     prompt['instruction'] = '. '.join(clauses)
     return prompt
-
-
-DISTRACTORS = [
-    "Bananas are berries, but strawberries are not.",
-    "The Eiffel Tower shrinks in winter.",
-    "Octopuses have three hearts."
-]
-
-def inject_noise(paragraph: str) -> str:
-    sentences = paragraph.strip().split('. ')
-    insert_at = random.randint(0, len(sentences))
-    sentences.insert(insert_at, random.choice(DISTRACTORS))
-    return '. '.join(sentences)
-
-
-def synonymize_paragraph(paragraph: str) -> str:
-    words = paragraph.split()
-    for i in range(len(words)):
-        if random.random() < 0.1:
-            words[i] = synonym_replace(words[i])
-    return ' '.join(words)
