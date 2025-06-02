@@ -61,7 +61,8 @@ chry.register(tweak_capital_gain, confidence_invariant)
 if __name__ == "__main__":
     chry.run(
         sut=predict_income,
-        input_data=get_input_data(50),
-        chain_length=50,
-        num_chains=10
+        input_data=get_input_data(2000),
+        chain_length=30,
+        num_chains=25
     )
+
