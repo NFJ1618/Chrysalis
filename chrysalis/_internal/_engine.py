@@ -81,16 +81,26 @@ class TemporarySqlite3RelationConnection(TemporaryDirectory):
         # Arguably, this context manager should be based off `TemporaryFile` instead of
         # `TemporaryDirectory`, but this design was chosen due to ease of
         # implementation.
-        db_path = Path(temp_dir) / "chry.db"
-        conn = sqlite3.connect(db_path)
+        self.db_path = Path(temp_dir) / "chry.db"
+        self.conn = sqlite3.connect(self.db_path)
 
         # Sqlite3 doesn't enfore foreign key existance by default.
-        conn.execute("PRAGMA foreign_keys = ON")
+        self.conn.execute("PRAGMA foreign_keys = ON")
+        
+        self.conn.execute(_CREATE_INPUT_DATA_TABLE)
+        self.conn.execute(_CREATE_APPLIED_TRANSFORMATION_TABLE)
+        self.conn.execute(_CREATE_INVARIANT_TABLE)
 
-        conn.execute(_CREATE_INPUT_DATA_TABLE)
-        conn.execute(_CREATE_APPLIED_TRANSFORMATION_TABLE)
-        conn.execute(_CREATE_INVARIANT_TABLE)
-        return conn, db_path
+        return self.conn, self.db_path
+
+    
+    def __exit__(self, *args, **kwargs):
+        # Close the SQLite connection *before* deleting the directory
+        try:
+            self.conn.close()
+        except Exception:
+            pass
+        return super().__exit__(*args, **kwargs)
 
 
 class Engine[T, R]:

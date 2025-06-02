@@ -96,6 +96,6 @@ def run[T, R](
         )
         engine.execute(relation_chains)
 
-    writer.print_failed_relations()
+        writer.print_failed_relations()
 
-    return engine.results_to_duckdb()
+        return engine.results_to_duckdb()
