@@ -62,9 +62,9 @@ def semantic_similarity(a: str, b: str) -> float:
 # --- Chrysalis Invariants ---
 
 def entropy_invariant(curr: str, prev: str) -> bool:
-    """Entropy should not deviate more than ±0.5 bits."""
+    """Entropy should not deviate more than ±0.25 bits."""
     delta = abs(compute_entropy(curr) - compute_entropy(prev))
-    return delta <= 0.5
+    return delta <= 0.25
 
 def lexical_diversity_invariant(curr: str, prev: str) -> bool:
     """Lexical diversity should be stable (within ±0.1)."""
@@ -72,14 +72,14 @@ def lexical_diversity_invariant(curr: str, prev: str) -> bool:
     return delta <= 0.1
 
 def zipf_invariant(curr: str, prev: str) -> bool:
-    """Zipf exponent should stay within ±0.2."""
+    """Zipf exponent should stay within ±0.1."""
     delta = abs(zipf_exponent(curr) - zipf_exponent(prev))
-    return delta <= 0.2
+    return delta <= 0.1
 
 def named_entity_invariant(curr: str, prev: str) -> bool:
     """Named entities should largely overlap (Jaccard ≥ 0.6)."""
     return ne_overlap(curr, prev) >= 0.6
 
 def semantic_similarity_invariant(curr: str, prev: str) -> bool:
-    """Overall meaning should be preserved (cosine similarity ≥ 0.8)."""
-    return semantic_similarity(curr, prev) >= 0.7
+    """Overall meaning should be preserved (cosine similarity ≥ 0.9)."""
+    return semantic_similarity(curr, prev) >= 0.9
